@@ -9,11 +9,6 @@ ARG app_dir
 
 WORKDIR ${app_dir}
 
-RUN --mount=type=cache,target=/go/pkg/mod/ \
-	--mount=type=bind,source=go.sum,target=go.sum \
-	--mount=type=bind,source=go.mod,target=go.mod \
-	go mod download -x
-
 COPY . .
 ARG BUILD_STRING=pretendo.minecraftwiiu.docker
 RUN --mount=type=cache,target=/go/pkg/mod/ \

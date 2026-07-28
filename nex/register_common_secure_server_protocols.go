@@ -76,6 +76,8 @@ func gameSpecificCanJoinMatchmakeSession(manager *commonglobals.MatchmakingManag
 		return nex.NewError(nex.ResultCodes.RendezVous.PermissionDenied, "Gathering is not open to new participants")
 	}
 
+	return nil
+
 	isPublic := false
 	attrib := session.Attributes[0]
 	// * I wish this was a joke. top 8 bits are GameMode

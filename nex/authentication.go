@@ -2,6 +2,7 @@ package nex
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 
@@ -9,7 +10,29 @@ import (
 	"github.com/PretendoNetwork/nex-go/v2"
 )
 
+func startHealthCheckResponder(port int) {
+	address, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		return
+	}
+	socket, err := net.ListenUDP("udp", address)
+	if err != nil {
+		return
+	}
+	buffer := make([]byte, 1024)
+	for {
+		n, client, err := socket.ReadFromUDP(buffer)
+		if err == nil {
+			socket.WriteToUDP(buffer[:n], client)
+		}
+	}
+}
+
 func StartAuthenticationServer() {
+	if healthPort, err := strconv.Atoi(os.Getenv("PN_MINECRAFT_HEALTH_CHECK_PORT")); err == nil && healthPort != 0 {
+		go startHealthCheckResponder(healthPort)
+	}
+
 	globals.AuthenticationServer = nex.NewPRUDPServer()
 	globals.AuthenticationServer.ByteStreamSettings.UseStructureHeader = true
 
