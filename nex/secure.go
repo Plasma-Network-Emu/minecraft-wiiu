@@ -2,9 +2,10 @@ package nex
 
 import (
 	"fmt"
-	common_globals "github.com/PretendoNetwork/nex-protocols-common-go/v2/globals"
 	"os"
 	"strconv"
+
+	common_globals "github.com/PretendoNetwork/nex-protocols-common-go/v2/globals"
 
 	"github.com/PretendoNetwork/minecraft-wiiu/globals"
 	"github.com/PretendoNetwork/nex-go/v2"
@@ -15,6 +16,7 @@ func StartSecureServer() {
 	globals.SecureServer.ByteStreamSettings.UseStructureHeader = true
 
 	globals.SecureEndpoint = nex.NewPRUDPEndPoint(1)
+	globals.SecureEndpoint.DefaultStreamSettings.MaxSilenceTime = 15000
 	globals.SecureEndpoint.IsSecureEndPoint = true
 	globals.SecureEndpoint.ServerAccount = globals.SecureServerAccount
 	globals.SecureEndpoint.AccountDetailsByPID = globals.AccountDetailsByPID
