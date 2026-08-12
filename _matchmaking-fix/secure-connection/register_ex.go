@@ -39,16 +39,16 @@ func (commonProtocol *CommonProtocol) registerEx(err error, packet nex.PacketInt
 
 		// * Station reports itself as being non-public (local)
 		if localStation == nil && !stationURL.IsPublic() {
-			localStation = &stationURL
+			localStation = stationURL.CopyRef().(*types.StationURL)
 		}
 
 		// * Still did not find the station, trying heuristics
 		if localStation == nil && natf == constants.UnknownNATFiltering && natm == constants.UnknownNATMapping {
-			localStation = &stationURL
+			localStation = stationURL.CopyRef().(*types.StationURL)
 		}
 
 		if publicStation == nil && stationURL.IsPublic() {
-			publicStation = &stationURL
+			publicStation = stationURL.CopyRef().(*types.StationURL)
 		}
 	}
 
@@ -58,7 +58,7 @@ func (commonProtocol *CommonProtocol) registerEx(err error, packet nex.PacketInt
 	}
 
 	if publicStation == nil {
-		publicStation = localStation
+		publicStation = localStation.CopyRef().(*types.StationURL)
 
 		var address string
 		var port uint16
