@@ -1,13 +1,15 @@
 package nex
 
 import (
+	"os"
+	"strconv"
+
 	"github.com/PretendoNetwork/minecraft-wiiu/globals"
+	"github.com/PretendoNetwork/nex-go/v2"
 	"github.com/PretendoNetwork/nex-go/v2/constants"
 	"github.com/PretendoNetwork/nex-go/v2/types"
 	commonticketgranting "github.com/PretendoNetwork/nex-protocols-common-go/v2/ticket-granting"
 	ticketgranting "github.com/PretendoNetwork/nex-protocols-go/v2/ticket-granting"
-	"os"
-	"strconv"
 )
 
 func registerCommonAuthenticationServerProtocols() {
@@ -30,4 +32,8 @@ func registerCommonAuthenticationServerProtocols() {
 	commonTicketGrantingProtocol.SecureStationURL = secureStationURL
 	commonTicketGrantingProtocol.BuildName = types.NewString("branch:origin/release/ngs/3.10.x.200x build:3_10_22_2006_0")
 	commonTicketGrantingProtocol.SecureServerAccount = globals.SecureServerAccount
+
+	commonTicketGrantingProtocol.OnAfterLoginEx = func(packet nex.PacketInterface, strUserName types.String, oExtraData types.DataHolder) {
+		globals.Logger.Warningf("TicketGranting::LoginEx - PID: %d, Username: %s", uint32(packet.Sender().PID()), string(strUserName))
+	}
 }

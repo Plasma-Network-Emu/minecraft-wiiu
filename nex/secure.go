@@ -16,7 +16,7 @@ func StartSecureServer() {
 	globals.SecureServer.ByteStreamSettings.UseStructureHeader = true
 
 	globals.SecureEndpoint = nex.NewPRUDPEndPoint(1)
-	globals.SecureEndpoint.DefaultStreamSettings.MaxSilenceTime = 15000
+	globals.SecureEndpoint.DefaultStreamSettings.MaxSilenceTime = 30000
 	globals.SecureEndpoint.IsSecureEndPoint = true
 	globals.SecureEndpoint.ServerAccount = globals.SecureServerAccount
 	globals.SecureEndpoint.AccountDetailsByPID = globals.AccountDetailsByPID
