@@ -18,7 +18,6 @@ func (commonProtocol *CommonProtocol) modifyCurrentGameAttribute(err error, pack
 	endpoint := connection.Endpoint().(*nex.PRUDPEndPoint)
 
 	commonProtocol.manager.Mutex.Lock()
-
 	session, _, nexError := database.GetMatchmakeSessionByID(commonProtocol.manager, endpoint, uint32(gid))
 	if nexError != nil {
 		commonProtocol.manager.Mutex.Unlock()
@@ -30,14 +29,22 @@ func (commonProtocol *CommonProtocol) modifyCurrentGameAttribute(err error, pack
 		return nil, nex.NewError(nex.ResultCodes.RendezVous.PermissionDenied, "change_error")
 	}
 
-	index := int(attribIndex)
-
-	if index >= len(session.Attributes) {
+	// Minecraft Wii U's NEX wrapper sends matchmaking attribute indexes as
+	// 1-based values: 1 = attributes[0], 2 = attributes[1], ... 6 = attributes[5].
+	// The database helper expects a zero-based index and converts it to the
+	// PostgreSQL array index internally.
+	if uint32(attribIndex) == 0 {
 		commonProtocol.manager.Mutex.Unlock()
 		return nil, nex.NewError(nex.ResultCodes.Core.InvalidIndex, "change_error")
 	}
 
-	nexError = database.UpdateGameAttribute(commonProtocol.manager, uint32(gid), uint32(attribIndex), uint32(newValue))
+	index := int(attribIndex) - 1
+	if index < 0 || index >= len(session.Attributes) {
+		commonProtocol.manager.Mutex.Unlock()
+		return nil, nex.NewError(nex.ResultCodes.Core.InvalidIndex, "change_error")
+	}
+
+	nexError = database.UpdateGameAttribute(commonProtocol.manager, uint32(gid), uint32(index), uint32(newValue))
 	if nexError != nil {
 		commonProtocol.manager.Mutex.Unlock()
 		return nil, nexError

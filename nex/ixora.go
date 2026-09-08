@@ -91,6 +91,17 @@ func ixoraAfterCreateMatchmakeSession(
 	_ types.String,
 	_ types.UInt16,
 ) {
+	ixoraResolveAndOpenLobby(packet)
+}
+
+func ixoraAfterCreateMatchmakeSessionWithParam(
+	packet nex.PacketInterface,
+	_ match_making_types.CreateMatchmakeSessionParam,
+) {
+	ixoraResolveAndOpenLobby(packet)
+}
+
+func ixoraResolveAndOpenLobby(packet nex.PacketInterface) {
 	if !ixoraConfigured() {
 		return
 	}
@@ -182,7 +193,16 @@ func ixoraAfterModifyCurrentGameAttribute(
 	attribIndex types.UInt32,
 	newValue types.UInt32,
 ) {
-	if !ixoraConfigured() || uint32(attribIndex) != 1 {
+	if !ixoraConfigured() || uint32(attribIndex) != 2 {
+		return
+	}
+
+	if uint32(newValue) > 8 {
+		globals.Logger.Warningf(
+			"Ixora: ignoring invalid slot update for lobby %d: %d",
+			uint32(gid),
+			uint32(newValue),
+		)
 		return
 	}
 
@@ -214,6 +234,9 @@ func ixoraCloseLobby(gid uint32) {
 	}
 }
 
+// ixoraHandleConnectionEnded is registered before the common matchmaking
+// disconnect cleanup handler. That lets us capture public lobbies owned by the
+// connection before the gathering is unregistered.
 func ixoraHandleConnectionEnded(connection *nex.PRUDPConnection) {
 	if !ixoraConfigured() {
 		return

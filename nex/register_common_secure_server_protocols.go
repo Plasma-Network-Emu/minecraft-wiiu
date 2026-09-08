@@ -30,7 +30,14 @@ func cleanupSearchMatchmakeSessionHandler(matchmakeSession *matchmakingtypes.Mat
 	globals.Logger.Info(matchmakeSession.String())
 }
 
-func CreateReportDBRecord(_ types.PID, _ types.UInt32, _ types.QBuffer) error {
+func CreateReportDBRecord(pid types.PID, reportID types.UInt32, reportData types.QBuffer) error {
+	globals.Logger.Warningf(
+		"SecureConnection::SendReport - PID: %d, ReportID: %d, Length: %d bytes",
+		uint32(pid), uint32(reportID), len(reportData),
+	)
+	globals.Logger.Warningf("SecureConnection::SendReport - Hex: %x", []byte(reportData))
+	globals.Logger.Warningf("SecureConnection::SendReport - As text: %q", string(reportData))
+
 	return nil
 }
 
@@ -152,6 +159,7 @@ func registerCommonSecureServerProtocols() {
 	commonMatchmakeExtensionProtocol.SetManager(globals.MatchmakingManager)
 	commonMatchmakeExtensionProtocol.CanJoinMatchmakeSession = gameSpecificCanJoinMatchmakeSession
 	commonMatchmakeExtensionProtocol.OnAfterCreateMatchmakeSession = ixoraAfterCreateMatchmakeSession
+	commonMatchmakeExtensionProtocol.OnAfterCreateMatchmakeSessionWithParam = ixoraAfterCreateMatchmakeSessionWithParam
 	commonMatchmakeExtensionProtocol.OnAfterModifyCurrentGameAttribute = ixoraAfterModifyCurrentGameAttribute
 
 	globals.MatchmakingManager.GetUserFriendPIDs = globals.GetUserFriendPIDs
