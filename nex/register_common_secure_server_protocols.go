@@ -8,20 +8,18 @@ import (
 	"github.com/PretendoNetwork/nex-go/v2"
 	"github.com/PretendoNetwork/nex-go/v2/types"
 	commonglobals "github.com/PretendoNetwork/nex-protocols-common-go/v2/globals"
-	"github.com/PretendoNetwork/nex-protocols-common-go/v2/match-making/database"
-	commonnattraversal "github.com/PretendoNetwork/nex-protocols-common-go/v2/nat-traversal"
-	commonsecure "github.com/PretendoNetwork/nex-protocols-common-go/v2/secure-connection"
-	nattraversal "github.com/PretendoNetwork/nex-protocols-go/v2/nat-traversal"
-	secure "github.com/PretendoNetwork/nex-protocols-go/v2/secure-connection"
-
 	commonmatchmaking "github.com/PretendoNetwork/nex-protocols-common-go/v2/match-making"
 	commonmatchmakingext "github.com/PretendoNetwork/nex-protocols-common-go/v2/match-making-ext"
+	"github.com/PretendoNetwork/nex-protocols-common-go/v2/match-making/database"
 	commonmatchmakeextension "github.com/PretendoNetwork/nex-protocols-common-go/v2/matchmake-extension"
+	commonnattraversal "github.com/PretendoNetwork/nex-protocols-common-go/v2/nat-traversal"
+	commonsecure "github.com/PretendoNetwork/nex-protocols-common-go/v2/secure-connection"
 	matchmaking "github.com/PretendoNetwork/nex-protocols-go/v2/match-making"
 	matchmakingext "github.com/PretendoNetwork/nex-protocols-go/v2/match-making-ext"
-	matchmakeextension "github.com/PretendoNetwork/nex-protocols-go/v2/matchmake-extension"
-
 	matchmakingtypes "github.com/PretendoNetwork/nex-protocols-go/v2/match-making/types"
+	matchmakeextension "github.com/PretendoNetwork/nex-protocols-go/v2/matchmake-extension"
+	nattraversal "github.com/PretendoNetwork/nex-protocols-go/v2/nat-traversal"
+	secure "github.com/PretendoNetwork/nex-protocols-go/v2/secure-connection"
 )
 
 // Is this needed? -Ash
@@ -32,14 +30,7 @@ func cleanupSearchMatchmakeSessionHandler(matchmakeSession *matchmakingtypes.Mat
 	globals.Logger.Info(matchmakeSession.String())
 }
 
-func CreateReportDBRecord(pid types.PID, reportID types.UInt32, reportData types.QBuffer) error {
-	globals.Logger.Warningf(
-		"SecureConnection::SendReport - PID: %d, ReportID: %d, Length: %d bytes",
-		uint32(pid), uint32(reportID), len(reportData),
-	)
-	globals.Logger.Warningf("SecureConnection::SendReport - Hex: %x", []byte(reportData))
-	globals.Logger.Warningf("SecureConnection::SendReport - As text: %q", string(reportData))
-
+func CreateReportDBRecord(_ types.PID, _ types.UInt32, _ types.QBuffer) error {
 	return nil
 }
 
@@ -50,12 +41,10 @@ func stubBrowseMatchmakeSession(err error, packet nex.PacketInterface, callID ui
 		globals.Logger.Error(err.Error())
 		return nil, nex.NewError(nex.ResultCodes.Core.InvalidArgument, "change_error")
 	}
-
 	connection := packet.Sender().(*nex.PRUDPConnection)
 	endpoint := connection.Endpoint().(*nex.PRUDPEndPoint)
 
 	lstGathering := types.NewList[types.DataHolder]()
-
 	// * Don't include any sessions!
 	//for _, session := range sessions {
 	//	matchmakeSessionDataHolder := types.NewAnyDataHolder()
@@ -68,7 +57,6 @@ func stubBrowseMatchmakeSession(err error, packet nex.PacketInterface, callID ui
 	rmcResponseStream := nex.NewByteStreamOut(endpoint.LibraryVersions(), endpoint.ByteStreamSettings())
 
 	lstGathering.WriteTo(rmcResponseStream)
-
 	rmcResponseBody := rmcResponseStream.Bytes()
 
 	rmcResponse := nex.NewRMCSuccess(endpoint, rmcResponseBody)
@@ -85,7 +73,6 @@ func gameSpecificCanJoinMatchmakeSession(manager *commonglobals.MatchmakingManag
 	}
 
 	return nil
-
 	isPublic := false
 	attrib := session.Attributes[0]
 	// * I wish this was a joke. top 8 bits are GameMode
@@ -96,7 +83,6 @@ func gameSpecificCanJoinMatchmakeSession(manager *commonglobals.MatchmakingManag
 		//globals.Logger.Info("Game is public")
 		return nil
 	}
-
 	host := session.OwnerPID
 	hostFriends := manager.GetUserFriendPIDs(uint32(host))
 	if slices.Contains(hostFriends, uint32(pid)) {
@@ -112,14 +98,12 @@ func gameSpecificCanJoinMatchmakeSession(manager *commonglobals.MatchmakingManag
 	if !isFriendsOfFriends {
 		return nex.NewError(nex.ResultCodes.RendezVous.NotFriend, "User is not a friend of host")
 	}
-
 	// * Get the participants of this gathering so we don't have to check all 100whatever of host's friends
 	_, _, participants, _, nerr := database.FindGatheringByID(manager, uint32(session.ID))
 	if nerr != nil {
 		globals.Logger.Errorf("Can't find gathering for pariticpation check: %v", nerr)
 		return nerr
 	}
-
 	for _, friend := range hostFriends {
 		// * Make sure this friend is actually in-game
 		// * This cast feels bad
@@ -132,7 +116,6 @@ func gameSpecificCanJoinMatchmakeSession(manager *commonglobals.MatchmakingManag
 			}
 		}
 	}
-
 	return nex.NewError(nex.ResultCodes.RendezVous.NotFriend, "User is not a friend of host's friends")
 }
 
@@ -142,18 +125,21 @@ func registerCommonSecureServerProtocols() {
 	commonSecureProtocol := commonsecure.NewCommonProtocol(secureProtocol)
 
 	commonSecureProtocol.CreateReportDBRecord = CreateReportDBRecord
-	commonSecureProtocol.OnAfterRegister = func(packet nex.PacketInterface, vecMyURLs types.List[types.StationURL]) {
-		globals.Logger.Warningf("SecureConnection::Register - PID: %d", uint32(packet.Sender().PID()))
-	}
-
 	natTraversalProtocol := nattraversal.NewProtocol()
 	globals.SecureEndpoint.RegisterServiceProtocol(natTraversalProtocol)
 	commonnattraversal.NewCommonProtocol(natTraversalProtocol)
 
 	matchMakingProtocol := matchmaking.NewProtocol()
 	globals.SecureEndpoint.RegisterServiceProtocol(matchMakingProtocol)
+
+	// Must be registered before commonmatchmaking.NewCommonProtocol(), because
+	// that constructor adds the normal matchmaking disconnect cleanup handler.
+	// Ixora needs to see owned public lobbies before that cleanup unregisters them.
+	globals.SecureEndpoint.OnConnectionEnded(ixoraHandleConnectionEnded)
+
 	commonMatchMakingProtocol := commonmatchmaking.NewCommonProtocol(matchMakingProtocol)
 	commonMatchMakingProtocol.SetManager(globals.MatchmakingManager)
+	commonMatchMakingProtocol.OnAfterUnregisterGathering = ixoraAfterUnregisterGathering
 
 	matchMakingExtProtocol := matchmakingext.NewProtocol()
 	globals.SecureEndpoint.RegisterServiceProtocol(matchMakingExtProtocol)
@@ -165,15 +151,15 @@ func registerCommonSecureServerProtocols() {
 	commonMatchmakeExtensionProtocol := commonmatchmakeextension.NewCommonProtocol(matchmakeExtensionProtocol)
 	commonMatchmakeExtensionProtocol.SetManager(globals.MatchmakingManager)
 	commonMatchmakeExtensionProtocol.CanJoinMatchmakeSession = gameSpecificCanJoinMatchmakeSession
+	commonMatchmakeExtensionProtocol.OnAfterCreateMatchmakeSession = ixoraAfterCreateMatchmakeSession
+	commonMatchmakeExtensionProtocol.OnAfterModifyCurrentGameAttribute = ixoraAfterModifyCurrentGameAttribute
 
 	globals.MatchmakingManager.GetUserFriendPIDs = globals.GetUserFriendPIDs
-
 	commonMatchmakeExtensionProtocol.CleanupSearchMatchmakeSession = cleanupSearchMatchmakeSessionHandler
 	if os.Getenv("PN_MINECRAFT_ALLOW_PUBLIC_MATCHMAKING") != "1" {
 		globals.Logger.Warning("Public minigames are disabled for safety reasons.")
 		globals.Logger.Warning("To enable public matches, set PN_MINECRAFT_ALLOW_PUBLIC_MATCHMAKING=1.")
 		matchmakeExtensionProtocol.SetHandlerBrowseMatchmakeSession(stubBrowseMatchmakeSession)
-
 		// * Make sure any unused MM protocols aren't able to show sessions
 		matchmakeExtensionProtocol.SetHandlerAutoMatchmakePostpone(nil)
 		matchmakeExtensionProtocol.SetHandlerAutoMatchmakeWithParamPostpone(nil)
